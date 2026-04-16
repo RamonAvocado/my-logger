@@ -1,5 +1,9 @@
 import logging
 import structlog
+
+## PROCESSORS ##
+from structlog.processors import CallsiteParameterAdder, CallsiteParameter, TimeStamper
+
 from structlog.stdlib import BoundLogger
 
 from .context_vars import _LOG_ENABLED
@@ -12,6 +16,19 @@ LEVEL3_STYLE = {
     "CRI": "\x1b[35m",  # magenta
     "EXC": "\x1b[31m",  # red
 }
+
+
+def callsite(_, __, event_dict):
+    if not event_dict.pop("location", False):
+        return event_dict
+
+    return CallsiteParameterAdder(
+        [
+            CallsiteParameter.PATHNAME,
+            CallsiteParameter.FUNC_NAME,
+            CallsiteParameter.LINENO,
+        ]
+    )(_, __, event_dict)
 
 
 def drop_if_disabled(_, __, event_dict):
@@ -41,8 +58,9 @@ def configure_logging(level=logging.INFO):
         processors=[
             drop_if_disabled,
             structlog.processors.add_log_level,
+            callsite,
             level_rename,
-            structlog.processors.TimeStamper(fmt="%H:%M:%S"),
+            TimeStamper(fmt="%H:%M:%S"),
             console_renderer,
         ],
         logger_factory=structlog.stdlib.LoggerFactory(),

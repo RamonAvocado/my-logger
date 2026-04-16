@@ -3,14 +3,13 @@ from src.ramonavocado_logger.wrapper import toggle_log
 
 log = get_log(test="True")
 
-@toggle_log(False)
 def silent_func():
     log.info("you will NOT see this")
 
 
 @toggle_log(True)
 def noisy_func():
-    log.info("you WILL see this")
+    log.info("you WILL see this", location=True)
 
 def main():
     silent_func()
