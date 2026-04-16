@@ -1,5 +1,6 @@
 import logging
 import structlog
+from structlog.stdlib import BoundLogger
 
 LEVEL3_STYLE = {
     "DEB": "\x1b[36m",  # cyan
@@ -41,5 +42,5 @@ def configure_logging(level=logging.INFO):
     )
 
 
-def get_log(**kwargs) -> structlog.BoundLogger:
+def get_log(**kwargs) -> BoundLogger:
     return structlog.get_logger(**kwargs)
