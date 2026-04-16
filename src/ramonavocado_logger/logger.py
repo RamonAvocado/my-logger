@@ -2,6 +2,8 @@ import logging
 import structlog
 from structlog.stdlib import BoundLogger
 
+from .context_vars import _LOG_ENABLED
+
 LEVEL3_STYLE = {
     "DEB": "\x1b[36m",  # cyan
     "INF": "\x1b[32m",  # green
@@ -10,6 +12,12 @@ LEVEL3_STYLE = {
     "CRI": "\x1b[35m",  # magenta
     "EXC": "\x1b[31m",  # red
 }
+
+
+def drop_if_disabled(_, __, event_dict):
+    if not _LOG_ENABLED.get():
+        raise structlog.DropEvent
+    return event_dict
 
 
 def level_rename(_, __, event_dict):
@@ -31,6 +39,7 @@ def configure_logging(level=logging.INFO):
 
     structlog.configure(
         processors=[
+            drop_if_disabled,
             structlog.processors.add_log_level,
             level_rename,
             structlog.processors.TimeStamper(fmt="%H:%M:%S"),
