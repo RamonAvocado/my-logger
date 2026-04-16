@@ -1,3 +1,4 @@
+from pathlib import Path
 import logging
 import structlog
 
@@ -7,6 +8,8 @@ from structlog.processors import CallsiteParameterAdder, CallsiteParameter, Time
 from structlog.stdlib import BoundLogger
 
 from .context_vars import _LOG_ENABLED
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 LEVEL3_STYLE = {
     "DEB": "\x1b[36m",  # cyan
@@ -29,6 +32,22 @@ def callsite(_, __, event_dict):
             CallsiteParameter.LINENO,
         ]
     )(_, __, event_dict)
+
+
+def make_pathname_relative(_, __, event_dict):
+    pathname = event_dict.get("pathname")
+    if not pathname:
+        return event_dict
+
+    path = Path(pathname).resolve()
+
+    try:
+        event_dict["pathname"] = str(path.relative_to(PROJECT_ROOT))
+    except ValueError:
+        # Si el archivo no cuelga de PROJECT_ROOT, deja algo razonable
+        event_dict["pathname"] = str(path)
+
+    return event_dict
 
 
 def drop_if_disabled(_, __, event_dict):
@@ -59,6 +78,7 @@ def configure_logging(level=logging.INFO):
             drop_if_disabled,
             structlog.processors.add_log_level,
             callsite,
+            make_pathname_relative,
             level_rename,
             TimeStamper(fmt="%H:%M:%S"),
             console_renderer,
