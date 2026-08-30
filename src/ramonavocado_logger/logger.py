@@ -4,6 +4,7 @@ import structlog
 
 ## PROCESSORS ##
 from structlog.processors import CallsiteParameterAdder, CallsiteParameter, TimeStamper
+from structlog.processors import StackInfoRenderer
 
 from structlog.stdlib import BoundLogger
 
@@ -29,7 +30,6 @@ def callsite(_, __, event_dict):
         [
             CallsiteParameter.PATHNAME,
             CallsiteParameter.FUNC_NAME,
-            CallsiteParameter.LINENO,
         ]
     )(_, __, event_dict)
 
@@ -56,6 +56,17 @@ def drop_if_disabled(_, __, event_dict):
     return event_dict
 
 
+class LevelRename:
+    def __init__(self) -> None:
+        pass
+
+    def __call__(self, _, __, event_dict):
+        level = event_dict.get("level")
+        if level:
+            event_dict["level"] = level[:3].upper()
+        return event_dict
+
+
 def level_rename(_, __, event_dict):
     level = event_dict.get("level")
     if level:
@@ -79,7 +90,9 @@ def configure_logging(level=logging.INFO):
             structlog.processors.add_log_level,
             callsite,
             make_pathname_relative,
-            level_rename,
+            # level_rename,
+            LevelRename(),
+            StackInfoRenderer(),
             TimeStamper(fmt="%H:%M:%S"),
             console_renderer,
         ],
